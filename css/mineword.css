@@ -1,0 +1,123 @@
+.mw-window a:hover {
+    background: url('chrome-extension://__MSG_@@extension_id__/img/voice.png') no-repeat center center!important;
+    background-size: 16px!important;
+}
+
+.mw-window {
+    position: fixed;
+    z-index: 99999;
+
+    width: 350px;
+    min-height: 150px;
+    padding: 8px;
+
+    font-size: 14px;
+    line-height: 1.5em;
+
+    text-align: left;
+
+    color: #fff;
+    background: rgba(72, 72, 72, 1);
+    box-shadow: 1px 1px 20px 2px rgba(72,72,72,1);
+}
+
+
+.mw-window-header h2 {
+    margin: 0;
+    padding: 0;
+
+    font-size: 24px;
+
+    color: #fff;
+    background: inherit;
+}
+
+.mw-window-con {
+    min-height: 120px;
+}
+
+.mw-window .pronounce-list {
+    margin: 5px 0;
+
+    font-size: 14px;
+}
+
+.mw-window .pronounce {
+    margin-right: 30px;
+
+    color: #fff;
+}
+.mw-window .phonetic {
+    margin: 0 .5em;
+
+    color: #a0a0a0;
+}
+
+.mw-window .mw-voice {
+    display: inline-block;
+
+    width: 16px;
+    height: 25px;
+
+    vertical-align: bottom;
+
+    background: url('chrome-extension://__MSG_@@extension_id__/img/voice.png') no-repeat center center;
+    background-size: 16px;
+}
+
+.mw-window .translation {
+    color: #fff;
+}
+
+
+.mw-window-add {
+    display: inline-block;
+    float: right;
+
+    width: 20px;
+    height: 30px;
+    height: 20px;
+
+    line-height: 20px;
+
+    cursor: pointer;
+
+    color: blue;
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 20px;
+}
+
+.new {
+    background-image: url('chrome-extension://__MSG_@@extension_id__/img/star_n.png');
+}
+.added {
+    background-image: url('chrome-extension://__MSG_@@extension_id__/img/star_y.png');
+}
+
+.mw-highlight {
+    maring: 0 5px;
+}
+
+.mw-toolbar {
+    position: absolute;
+    z-index: 99999;
+
+    width: 150px;
+    height: 27px;
+    padding: 0 5px;
+
+    line-height: 27px;
+
+    text-align: left;
+
+    color: #fff;
+    border-radius: 3px;
+    background: rgb(60, 60, 60);
+}
+
+.mw-toolbar .mw-tool-iterm {
+    text-decoration: none;
+
+    color: #fff;
+}

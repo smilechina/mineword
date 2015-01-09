@@ -1,0 +1,36 @@
+{
+    "manifest_version": 2,
+    "name": "Mine Word: 取词翻译助手",
+    "short_name": "Mine Word",
+    "version": "1.1.1",
+    "description": "Mine Word",
+    "background": {
+        "page": "bg.html"
+    },
+    "browser_action": {
+        "default_icon": "img/icon.png",
+        "default_title": "Mine Words",
+        "default_popup": "popup.html"
+    },
+    "content_scripts": [{
+        "matches": ["<all_urls>"],
+        "css": ["css/mineword.css"],
+        "all_frames": true,
+        "js": ["lib/jquery.js", "lib/html5sql.js", "js/mineword.js"]
+    }],
+    "icons": {
+        "16": "img/icon16.png"
+    },
+    "web_accessible_resources": [
+        "img/*"
+    ],
+    "options_page": "options.html",
+    "permissions": [
+        "clipboardRead",
+        "clipboardWrite",
+        "contextMenus",
+        "storage",
+        "notifications",
+        "<all_urls>"
+    ]
+}
