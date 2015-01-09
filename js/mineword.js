@@ -157,7 +157,7 @@
                 fixTop = 70;
             }
 
-            ret.top= ret.top - fixTop;
+            ret.top = ret.top - fixTop;
 
             if (window.outerWidth < (ret.left + 366 * rate)) {
                 ret.left = window.outerWidth - 400 * rate;
@@ -253,10 +253,7 @@
 
         // event handle for highlight word
         onDocumentMouseenter: function(elem, event) {
-            if (!event.ctrlKey) {
-                return;
-            }
-
+            var that = this;
             var $target = $(event.target);
 
             if (event.target === document) {
@@ -272,11 +269,31 @@
                 return;
             }
 
+            if (event.ctrlKey) {
+                this.translate(text, elem, null, {
+                    left: event.screenX,
+                    top: event.screenY
+                });
+            } else {
+                this.hoverHandle = function() {
+                    that.translate(text, elem, null, {
+                        left: event.screenX,
+                        top: event.screenY
+                    });
+                }
+            }
+        },
 
-            this.translate(text, elem, null, {
-                left: event.screenX,
-                top: event.screenY
-            });
+        onDocumentMouseleave: function(event) {
+            var $target = $(event.target);
+
+            if (event.target === document) {
+                return;
+            }
+            if ($target.hasClass('mw-highlight') ||
+                $target.css('background-color') !== 'rgb(255, 255, 0)') {
+                this.hoverHandle = null;
+            }
         },
 
         onDocumentClick: function(e) {
@@ -285,6 +302,7 @@
                 this.remove();
             }
         },
+        
         bindEvents: function() {
             var that = this;
             // 选中翻译
@@ -292,8 +310,19 @@
                 that.onDocumentMouseup(e);
             });
 
+            // ctrl翻译
+            $(document).on('keydown', function(e) {
+                if (e.ctrlKey && that.hoverHandle) {
+                    that.hoverHandle();
+                }
+            });
+
             document.addEventListener('mouseenter', function(event) {
                 that.onDocumentMouseenter(this, event);
+            }, true);
+
+            document.addEventListener('mouseleave', function(event) {
+                that.onDocumentMouseleave(this, event);
             }, true);
 
             // 点击外部关闭弹框
