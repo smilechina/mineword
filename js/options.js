@@ -17,16 +17,26 @@ $(function() {
     }
 
     init();
-    
-    $('#save').on('click', function() {
+
+    function onSaveClick() {
         var email = $('#email').val();
 
+        var data = {
+            email: email
+        };
+
+        save(data);
+    }
+
+    function save(data) {
         chrome.storage.sync.set({
-            options: {
-                email: email
-            }
+            options: data
         }, function() {
             alert('保存成功!');
         });
+    }
+
+    $('#save').on('click', function() {
+        onSaveClick();
     });
 });

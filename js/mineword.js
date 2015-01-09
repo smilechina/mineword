@@ -318,6 +318,24 @@
 
     translate.init();
 
+    function getWords() {
+        var selection = window.getSelection();
+        var frag = selection.getRangeAt(0).cloneContents();
+
+        if (!frag) {
+            return;
+        }
+
+        var wordElems = frag.querySelectorAll('.mw-highlight');
+        var words = [];
+
+        for (var i = 0, len = wordElems.length; i < len; i++) {
+            words.push(wordElems[i].textContent);
+        }
+
+        return words;
+    }
+
     var toolbar = {
         $elem: null,
 
@@ -337,7 +355,7 @@
         create: function(offset) {
             var data = {
                 email: options.email,
-                subject: utils.getTopWin().document.title || ''
+                subject: 'mineword: ' + getWords().join(', ')
             };
             var html = utils.renderTemplate(this.template, data);
 
