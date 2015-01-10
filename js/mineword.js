@@ -107,8 +107,6 @@
         }
     };
 
-    highlight.init();
-
     var translate = {
         $elem: null,
 
@@ -302,7 +300,7 @@
                 this.remove();
             }
         },
-        
+
         bindEvents: function() {
             var that = this;
             // 选中翻译
@@ -344,8 +342,6 @@
             this.bindEvents();
         }
     };
-
-    translate.init();
 
     function getWords() {
         var selection = window.getSelection();
@@ -431,9 +427,38 @@
         },
 
         init: function() {
+
             this.bindEvents();
         }
     };
 
-    toolbar.init();
+    var host = window.location.hostname;
+    chrome.storage.sync.get('disurls', function(data) {
+        var isAbled = true;
+        var disurls = data.disurls;
+
+        if (!disurls || !disurls.length) {
+            init();
+            return;
+        }
+
+        disurls.forEach(function(v, k) {
+            if (v.indexOf(host) != -1) {
+                isAbled = false;
+                return false;
+            }
+        });
+
+        if (isAbled) {
+            init();
+        }
+    });
+
+    // TODO: get msg from popup.html / bg.js
+    function init() {
+        highlight.init();
+        translate.init();
+        toolbar.init();
+    }
+    
 })(jQuery, document);

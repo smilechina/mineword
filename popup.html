@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Getting Started Extension's Popup</title>
+    <title></title>
     <style>
     body {
         min-width: 100px;
@@ -19,6 +19,9 @@
         text-decoration: none;
         line-height: 30px;
     }
+    div > a{
+        display: none;
+    }
     </style>
 
     <!--
@@ -30,7 +33,15 @@
 </head>
 
 <body>
-    <h1>Hello word</h1>
+    <div>
+    <!-- cannot use javascript:; or void(0), because of chrome's safe policy -->
+        <a id="disable-cur" href="#">在此页面禁用</a>
+    </div>
+    <div>
+        <a id="enable-cur" href="#">在此页面启用</a>
+    </div>
+    <script src="lib/jquery.js"></script>
+    <script src="js/popup.js"></script>
 </body>
 
 </html>
