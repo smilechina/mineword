@@ -60,7 +60,7 @@ function onDisableCurClick() {
     chrome.storage.sync.set({
         disurls: disurls
     }, function() {
-        refreshButtons(disurls);
+        refresh(disurls);
     });
 }
 
