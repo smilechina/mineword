@@ -1,16 +1,26 @@
-$(function() {
+/**
+ * @file options
+ * @author solopea@gmail.com
+ */
+
+$(function () {
     function init() {
-        chrome.storage.sync.get('options', function(data) {
-            var obj = data.options;
+        var options = {
+            autoplay: false,
+            timetoclose: 3000
+        };
+        chrome.storage.sync.get('options', function (data) {
+            $.extend(options, data.options);
 
-            if (!obj) {
-                return;
-            }
-
-            for (var key in obj) {
+            for (var key in options) {
                 var $elem = $('#' + key);
+
                 if ($elem) {
-                    $elem.val(obj[key]);
+                    if ($elem.attr('type') === 'checkbox') {
+                        $elem.get(0).checked = options[key];
+                        continue;
+                    }
+                    $elem.val(options[key]);
                 }
             }
         });
@@ -20,9 +30,13 @@ $(function() {
 
     function onSaveClick() {
         var email = $('#email').val();
+        var autoplay = $('#autoplay').get(0).checked;
+        var timetoclose = $('#timetoclose').val();
 
         var data = {
-            email: email
+            email: email,
+            timetoclose: timetoclose,
+            autoplay: autoplay
         };
 
         save(data);
@@ -31,12 +45,12 @@ $(function() {
     function save(data) {
         chrome.storage.sync.set({
             options: data
-        }, function() {
+        }, function () {
             alert('保存成功!');
         });
     }
 
-    $('#save').on('click', function() {
+    $('#save').on('click', function () {
         onSaveClick();
     });
 });

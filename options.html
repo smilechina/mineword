@@ -4,17 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <title>Minewords 设置选项</title>
+    <link rel="stylesheet" href="css/options.css">
 </head>
 
 <body>
     <h1>Hello word</h1>
     <form>
-        <div>
+        <div class="field-item">
             <label for="email">邮箱：</label>
-            <input type="text" id="email" name="email">
+            <input type="mail" id="email" name="email" placeholder="请填写邮箱">
         </div>
-
-        <input type="button" value="保存" id="save">
+        <div class="field-item">
+            <label for="autoplay">自动播放：</label>
+            <input type="checkbox" name="autoplay" id="autoplay">
+        </div> 
+        <div class="field-item">
+            <label for="timetoclose">浮窗关闭时间：</label>
+            <input type="number" name="timetoclose" id="timetoclose" value="">毫秒
+            <span class="tips">设为0时，不自动关闭浮窗</span>
+        </div>
+        <div class="btn-wrap">
+            <input type="button" value="保存" id="save">
+        </div>
     </form>
     <script src="lib/jquery.js"></script>
     <script src="js/options.js"></script>

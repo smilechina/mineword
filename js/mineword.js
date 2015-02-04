@@ -1,7 +1,7 @@
 /**
- * author: tomasy
- * email: solopea@gmail.com
- * date: 2014-12-06
+ * @author: tomasy
+ * @email: solopea@gmail.com
+ * @date: 2014-12-06
  */
 
 (function($, document) {
@@ -11,9 +11,13 @@
     };
 
     // get user's options
-    var options = {};
+    var options = {
+        autoplay: true,
+        timetoclose: 3000
+    };
+
     chrome.storage.sync.get('options', function(data) {
-        options = data.options || {};
+        options = $.extend(options, data.options);
     });
 
     var utils = {
@@ -109,6 +113,7 @@
 
     var translate = {
         $elem: null,
+        closeTimer: 0,
 
         template: [
             '<div class="mw-window">',
@@ -133,6 +138,16 @@
 
             this.getTranslation(text, function(data) {
                 that.refresh(text, data, offset, target);
+                if (options.autoplay) {
+                    setTimeout(function() {
+                        that.playAudio();
+                    }, 500);
+                }
+                if (options.timetoclose != 0) {
+                    that.closeTimer = setTimeout(function() {
+                        that.remove();
+                    }, options.timetoclose);
+                }
             });
         },
 
@@ -197,6 +212,7 @@
         },
 
         remove: function() {
+            clearTimeout(this.closeTimer);
             if (this.$elem) {
                 this.$elem.remove();
                 this.$elem = null;
@@ -204,6 +220,8 @@
         },
 
         playAudio: function(elem) {
+            elem = elem || this.$elem.find('.mw-voice');
+
             var $audio = $('#mw-audio');
 
             if (!$audio.length) {
