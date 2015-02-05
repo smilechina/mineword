@@ -5,6 +5,13 @@
  */
 
 (function($, document) {
+    Math.guid = function(){
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+        return v.toString(16);
+      }).toUpperCase();
+    };
+
     var API = {
         translate: 'https://fanyi.youdao.com/openapi.do?' + 'keyfrom=mineword&key=1362458147&type=data&doctype=json&version=1.1&q=',
         audio: 'http://dict.youdao.com/dictvoice?audio='
@@ -39,6 +46,8 @@
     };
 
     var highlight = {
+        records: {},
+        ids: [],
         hasWords: function() {
             var selection = window.getSelection();
             var frag = selection.getRangeAt(0).cloneContents();
@@ -59,47 +68,81 @@
 
         refresh: function(target) {
             if (this.isHighlight(target)) {
-                this.create();
+                return this.create();
             }
+
+            return $(target).closest('.mw-highlight').get(0);
         },
 
         create: function() {
             var range = window.getSelection().getRangeAt(0);
             var selectionContents = range.extractContents();
-            var span = document.createElement('em');
+            var elem = document.createElement('em');
 
-            span.appendChild(selectionContents);
+            elem.appendChild(selectionContents);
 
-            span.setAttribute('class', 'mw-highlight');
-            span.setAttribute('title', 'Backspace键删除');
-            span.style.backgroundColor = 'yellow';
-            span.style.color = 'black';
-            span.style.margin = '0 5px';
+            elem.setAttribute('class', 'mw-highlight');
+            elem.setAttribute('title', 'Backspace键删除');
+            elem.style.backgroundColor = 'yellow';
+            elem.style.color = 'black';
+            elem.style.margin = '0 5px';
 
-            range.insertNode(span);
+            var guid = Math.guid();
+            elem.setAttribute('data-id', guid);
+            range.insertNode(elem);
+
+            this.records[guid] = elem;
+            this.ids.push(guid);
+            return elem;
         },
 
-        remove: function() {
+        remove: function(id) {
+            var elem = this.records[id];
+            if (!elem) {
+                return;
+            }
+            translate.selectText(elem); 
+
             var range = window.getSelection().getRangeAt(0);
-            var emNode = window.getSelection().anchorNode.parentElement;
+            var emElem = elem || window.getSelection().anchorNode.parentElement;
             var selectionContents = range.extractContents();
 
-            if ($(emNode).hasClass('mw-highlight')) {
-                emNode.remove();
+            if (!$(emElem).hasClass('mw-highlight')) {
+                return;
             }
+
+            emElem.remove();
             range.insertNode(selectionContents);
+
+            try {
+                delete this.records[id];
+                this.ids.splice(this.ids.indexOf(id), 1);
+            }
+            catch (e) {
+            }
+        },
+
+        removeLast: function () {
+            var id = this.ids[this.ids.length - 1];
+            this.remove(id);
         },
 
         bindEvents: function() {
             var that = this;
-            $(document).on('keydown', function(e) {
+            $(document).on('keydown', function (e) {
+                // ctrl + z to remove last word's highlight
+                if (e.keyCode === 90 && e.ctrlKey) {
+                    that.removeLast();
+                    return;
+                }
+
                 if (e.keyCode !== 8 || !window.getSelection().toString()) {
                     return;
                 }
 
                 var elem = window.getSelection().anchorNode.parentElement;
                 if ($(elem).hasClass('mw-highlight')) {
-                    that.remove();
+                    that.remove($(elem).data('id'));
                     e.preventDefault();
                     return false;
                 }
@@ -208,7 +251,19 @@
 
             $(topCtx.body).append($elem);
 
-            highlight.refresh(target);
+            var wrapElem = highlight.refresh(target);
+            this.selectText(wrapElem);
+        },
+
+        selectText: function (el) {
+            var range = document.createRange();
+
+            range.selectNodeContents(el);
+
+            var sel = window.getSelection();
+
+            sel.removeAllRanges();
+            sel.addRange(range);
         },
 
         remove: function() {
@@ -221,6 +276,9 @@
 
         playAudio: function(elem) {
             elem = elem || this.$elem.find('.mw-voice');
+            if (!elem) {
+                return;
+            }
 
             var $audio = $('#mw-audio');
 
