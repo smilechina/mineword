@@ -2,7 +2,7 @@
     "manifest_version": 2,
     "name": "Mine Word: 取词翻译助手",
     "short_name": "Mine Word",
-    "version": "1.1.8",
+    "version": "1.1.8.1",
     "description": "Mine Word",
     "background": {
         "page": "bg.html"

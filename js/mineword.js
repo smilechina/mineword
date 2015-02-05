@@ -42,6 +42,17 @@
                 return win;
             }
             return utils.getTopWin(win.parent);
+        },
+
+        selectText: function (el) {
+            var range = document.createRange();
+
+            range.selectNodeContents(el);
+
+            var sel = window.getSelection();
+
+            sel.removeAllRanges();
+            sel.addRange(range);
         }
     };
 
@@ -101,17 +112,13 @@
             if (!elem) {
                 return;
             }
-            translate.selectText(elem); 
+            // TODO: optimize
+            utils.selectText(elem);
 
             var range = window.getSelection().getRangeAt(0);
-            var emElem = elem || window.getSelection().anchorNode.parentElement;
             var selectionContents = range.extractContents();
 
-            if (!$(emElem).hasClass('mw-highlight')) {
-                return;
-            }
-
-            emElem.remove();
+            elem.remove();
             range.insertNode(selectionContents);
 
             try {
@@ -252,18 +259,7 @@
             $(topCtx.body).append($elem);
 
             var wrapElem = highlight.refresh(target);
-            this.selectText(wrapElem);
-        },
-
-        selectText: function (el) {
-            var range = document.createRange();
-
-            range.selectNodeContents(el);
-
-            var sel = window.getSelection();
-
-            sel.removeAllRanges();
-            sel.addRange(range);
+            utils.selectText(wrapElem);
         },
 
         remove: function() {
@@ -275,7 +271,7 @@
         },
 
         playAudio: function(elem) {
-            elem = elem || this.$elem.find('.mw-voice');
+            elem = elem || this.$elem && this.$elem.find('.mw-voice');
             if (!elem) {
                 return;
             }
