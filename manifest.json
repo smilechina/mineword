@@ -17,15 +17,15 @@
         "css": ["css/mineword.css"],
         "all_frames": true,
         "js": ["lib/jquery.js",
-            "js/guid.js",
-            "js/utils.js",
-            "js/api.js",
-            "js/word.js",
-            "js/highlight.js",
-            "js/conf.js",
-            "js/translate.js",
-            "js/toolbar.js",
-            "js/mineword.js"
+            "js/common/guid.js",
+            "js/common/utils.js",
+            "js/common/api.js",
+            "js/common/conf.js",
+            "js/content/word.js",
+            "js/content/highlight.js",
+            "js/content/translate.js",
+            "js/content/toolbar.js",
+            "js/content/mineword.js"
         ]
     }],
     "icons": {
