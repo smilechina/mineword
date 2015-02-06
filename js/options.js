@@ -8,6 +8,7 @@ $(function () {
         var options = {
             autoplay: false,
             timetoclose: 3000
+
         };
         chrome.storage.sync.get('options', function (data) {
             $.extend(options, data.options);
@@ -37,6 +38,7 @@ $(function () {
             email: email,
             timetoclose: timetoclose,
             autoplay: autoplay
+
         };
 
         save(data);
@@ -45,9 +47,10 @@ $(function () {
     function save(data) {
         chrome.storage.sync.set({
             options: data
+
         }, function () {
-            alert('保存成功!');
-        });
+                alert('保存成功!');
+            });
     }
 
     $('#save').on('click', function () {

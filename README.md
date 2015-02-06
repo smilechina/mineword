@@ -1,5 +1,5 @@
 ## Update
-+ ctrl + z取消上次高亮的单词
++ update
 
 ## Feature
 + 取词翻译

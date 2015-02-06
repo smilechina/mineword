@@ -1,536 +1,187 @@
 /**
+ * @file mineword.js
  * @author: tomasy
  * @email: solopea@gmail.com
  * @date: 2014-12-06
  */
 
-(function($, document) {
-    Math.guid = function(){
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-        return v.toString(16);
-      }).toUpperCase();
-    };
+var $p = $({});
 
-    var API = {
-        translate: 'https://fanyi.youdao.com/openapi.do?' + 'keyfrom=mineword&key=1362458147&type=data&doctype=json&version=1.1&q=',
-        audio: 'http://dict.youdao.com/dictvoice?audio='
-    };
-
-    // get user's options
-    var options = {
-        autoplay: true,
-        timetoclose: 3000
-    };
-
-    chrome.storage.sync.get('options', function(data) {
-        options = $.extend(options, data.options);
-    });
-
-    var utils = {
-        isMac: navigator.appVersion.indexOf('Mac') !== -1,
-
-        renderTemplate: function(tpl, data) {
-            return tpl.replace(/\{\{(\w+)\}\}/g, function(m, $1) {
-                return data[$1] || '';
-            });
-        },
-
-        getTopWin: function(win) {
-            win = win || window;
-            if (win.parent === win) {
-                return win;
-            }
-            return utils.getTopWin(win.parent);
-        },
-
-        selectText: function (el) {
-            var range = document.createRange();
-
-            range.selectNodeContents(el);
-
-            var sel = window.getSelection();
-
-            sel.removeAllRanges();
-            sel.addRange(range);
+var MineWord = {
+    removeLast: function () {
+        var id = Word.removeLast();
+        if (id) {
+            highlight.remove(id);
         }
-    };
+    },
 
-    var highlight = {
-        records: {},
-        ids: [],
-        hasWords: function() {
-            var selection = window.getSelection();
-            var frag = selection.getRangeAt(0).cloneContents();
+    remove: function (id) {
+        Word.remove(id);
+        highlight.remove(id);
+    },
 
-            return !!frag.querySelector('.mw-highlight');
-        },
+    handleTextSelected: function (e) {
+        var selection = window.getSelection();
+        var text = selection.toString();
+        var target = e.target;
 
-        isHighlight: function(target) {
-            var isHighlight = true;
-            var $target = $(target);
-
-            if (!target || $target.hasClass('mw-highlight') || $target.closest('.mw-highlight').length) {
-                isHighlight = false;
-            }
-
-            return isHighlight;
-        },
-
-        refresh: function(target) {
-            if (this.isHighlight(target)) {
-                return this.create();
-            }
-
-            return $(target).closest('.mw-highlight').get(0);
-        },
-
-        create: function() {
-            var range = window.getSelection().getRangeAt(0);
-            var selectionContents = range.extractContents();
-            var elem = document.createElement('em');
-
-            elem.appendChild(selectionContents);
-
-            elem.setAttribute('class', 'mw-highlight');
-            elem.setAttribute('title', 'Backspace键删除');
-            elem.style.backgroundColor = 'yellow';
-            elem.style.color = 'black';
-            elem.style.margin = '0 5px';
-
-            var guid = Math.guid();
-            elem.setAttribute('data-id', guid);
-            range.insertNode(elem);
-
-            this.records[guid] = elem;
-            this.ids.push(guid);
-            return elem;
-        },
-
-        remove: function(id) {
-            var elem = this.records[id];
-            if (!elem) {
-                return;
-            }
-            // TODO: optimize
-            utils.selectText(elem);
-
-            var range = window.getSelection().getRangeAt(0);
-            var selectionContents = range.extractContents();
-
-            elem.remove();
-            range.insertNode(selectionContents);
-
-            try {
-                delete this.records[id];
-                this.ids.splice(this.ids.indexOf(id), 1);
-            }
-            catch (e) {
-            }
-        },
-
-        removeLast: function () {
-            var id = this.ids[this.ids.length - 1];
-            this.remove(id);
-        },
-
-        bindEvents: function() {
-            var that = this;
-            $(document).on('keydown', function (e) {
-                // ctrl + z to remove last word's highlight
-                if (e.keyCode === 90 && e.ctrlKey) {
-                    that.removeLast();
-                    return;
-                }
-
-                if (e.keyCode !== 8 || !window.getSelection().toString()) {
-                    return;
-                }
-
-                var elem = window.getSelection().anchorNode.parentElement;
-                if ($(elem).hasClass('mw-highlight')) {
-                    that.remove($(elem).data('id'));
-                    e.preventDefault();
-                    return false;
-                }
-            });
-        },
-
-        init: function() {
-            this.bindEvents();
+        // 点击弹框内部不提示
+        if ($(target).closest('.mw-window').length || !text) {
+            return;
         }
-    };
 
-    var translate = {
-        $elem: null,
-        closeTimer: 0,
+        this.select(e, text, selection, target);
+    },
 
-        template: [
-            '<div class="mw-window">',
-            '<div class="mw-window-header">',
-            '<h2>{{word}}</h2>',
-            '</div>',
-            '<div class="mw-window-con">',
-            '<div class="pronounce-list">',
-            '<span class="pronounce">',
-            '美',
-            '<span class="phonetic">{{phonetic}}</span>',
-            '<a class="mw-voice" data-rel="{{word}}&type=2" href="#"></a>',
-            '</span>',
-            '</div>',
-            '<div class="translation">{{translation}}</div>',
-            '</div>',
-            '</div>'
-        ].join(''),
+    select: function (e, text, selection, target) {
+        // save offset for toolbar
+        var toolbarOffset = {
+            left: e.pageX,
+            top: e.pageY
 
-        translate: function(text, selection, target, offset) {
-            var that = this;
+        };
+        if (highlight.hasWords()) {
+            toolbar.offset = toolbarOffset;
+            return;
+        }
 
-            this.getTranslation(text, function(data) {
-                that.refresh(text, data, offset, target);
-                if (options.autoplay) {
-                    setTimeout(function() {
-                        that.playAudio();
-                    }, 500);
-                }
-                if (options.timetoclose != 0) {
-                    that.closeTimer = setTimeout(function() {
-                        that.remove();
-                    }, options.timetoclose);
-                }
+        // translate
+        var translateOffset = {
+            top: e.screenY,
+            left: e.screenX
+
+        };
+
+        translate.translate(text, selection, target, translateOffset, function () {
+            $p.trigger('select', [
+                text,
+                target
+            ]);
+        });
+    },
+    // event handle for highlight word
+    onDocumentMouseenter: function (elem, event) {
+        var that = this;
+        var $target = $(event.target);
+
+        if (event.target === document) {
+            return;
+        }
+        if (!$target.hasClass('mw-highlight') && $target.css('background-color') !== 'rgb(255, 255, 0)') {
+            return;
+        }
+
+        var text = $target.text();
+
+        if (!text) {
+            return;
+        }
+
+        if (event.ctrlKey) {
+            translate.translate(text, elem, null, {
+                left: event.screenX,
+                top: event.screenY
+
             });
-        },
-
-        getTranslation: function(text, callback) {
-            var that = this;
-            var url = API.translate + text;
-
-            $.get(url, function(data) {
-                callback(data);
-            });
-        },
-
-        calcPosition: function(pos) {
-            var ret = $.extend({}, pos);
-            var rate = window.devicePixelRatio;
-            var fixTop = 40;
-
-            if (utils.isMac) {
-                rate = rate / 2;
-                fixTop = 70;
-            }
-
-            ret.top = ret.top - fixTop;
-
-            if (window.outerWidth < (ret.left + 366 * rate)) {
-                ret.left = window.outerWidth - 400 * rate;
-            }
-
-            return {
-                left: ret.left / rate,
-                top: ret.top / rate
-            };
-        },
-
-        refresh: function(text, data, pos, target) {
-            this.remove();
-            this.create(text, data, pos, target);
-        },
-
-        create: function(text, data, pos, target) {
-            if (!data.basic) {
-                return;
-            }
-
-            var data = {
-                word: text,
-                phonetic: data.basic['us-phonetic'],
-                translation: data.basic.explains.join('<br />')
-            };
-            var html = utils.renderTemplate(this.template, data);
-
-            var $elem = this.$elem = $(html);
-            var topCtx = utils.getTopWin().document;
-            var position = this.calcPosition(pos);
-
-
-            $elem.css(position);
-
-            $(topCtx.body).append($elem);
-
-            var wrapElem = highlight.refresh(target);
-            utils.selectText(wrapElem);
-        },
-
-        remove: function() {
-            clearTimeout(this.closeTimer);
-            if (this.$elem) {
-                this.$elem.remove();
-                this.$elem = null;
-            }
-        },
-
-        playAudio: function(elem) {
-            elem = elem || this.$elem && this.$elem.find('.mw-voice');
-            if (!elem) {
-                return;
-            }
-
-            var $audio = $('#mw-audio');
-
-            if (!$audio.length) {
-                $audio = $('<audio id="mw-audio" style="display: none"></audio>');
-                $audio.appendTo('body');
-            }
-
-            var audioElem = $audio.get(0);
-            var voiceUrl = API.audio + $(elem).data('rel');
-
-            $audio.attr('src', voiceUrl);
-
-            audioElem.play();
-        },
-
-        onDocumentMouseup: function(e) {
-            var selection = window.getSelection();
-            var text = selection.toString();
-            var target = e.target;
-
-            // 点击弹框内部不提示
-            if ($(target).closest('.mw-window').length || !text) {
-                return;
-            }
-
-            this.onSelect(e, text, selection, target);
-        },
-
-        onSelect: function(e, text, selection, target) {
-            // save offset for toolbar
-            if (highlight.hasWords()) {
-                toolbar.offset = {
-                    left: e.pageX,
-                    top: e.pageY
-                };
-                return;
-            }
-
-            // translate
-            this.translate(text, selection, target, {
-                top: e.screenY,
-                left: e.screenX
-            });
-        },
-
-        // event handle for highlight word
-        onDocumentMouseenter: function(elem, event) {
-            var that = this;
-            var $target = $(event.target);
-
-            if (event.target === document) {
-                return;
-            }
-            if (!$target.hasClass('mw-highlight') && $target.css('background-color') !== 'rgb(255, 255, 0)') {
-                return;
-            }
-
-            var text = $target.text();
-
-            if (!text) {
-                return;
-            }
-
-            if (event.ctrlKey) {
-                this.translate(text, elem, null, {
+        }
+        else {
+            this.hoverHandle = function () {
+                translate.translate(text, elem, null, {
                     left: event.screenX,
                     top: event.screenY
+
                 });
-            } else {
-                this.hoverHandle = function() {
-                    that.translate(text, elem, null, {
-                        left: event.screenX,
-                        top: event.screenY
-                    });
-                }
-            }
-        },
-
-        onDocumentMouseleave: function(event) {
-            var $target = $(event.target);
-
-            if (event.target === document) {
-                return;
-            }
-            if ($target.hasClass('mw-highlight') ||
-                $target.css('background-color') !== 'rgb(255, 255, 0)') {
-                this.hoverHandle = null;
-            }
-        },
-
-        onDocumentClick: function(e) {
-            var $target = $(e.target);
-            if (!$target.closest('.mw-window').length) {
-                this.remove();
-            }
-        },
-
-        bindEvents: function() {
-            var that = this;
-            // 选中翻译
-            $(document).bind('mouseup', function(e) {
-                that.onDocumentMouseup(e);
-            });
-
-            // ctrl翻译
-            $(document).on('keydown', function(e) {
-                if (e.ctrlKey && that.hoverHandle) {
-                    that.hoverHandle();
-                }
-            });
-
-            document.addEventListener('mouseenter', function(event) {
-                that.onDocumentMouseenter(this, event);
-            }, true);
-
-            document.addEventListener('mouseleave', function(event) {
-                that.onDocumentMouseleave(this, event);
-            }, true);
-
-            // 点击外部关闭弹框
-            $(document).on('click', function(e) {
-                that.onDocumentClick(e)
-            });
-
-            $(document).on('mouseleave', '.mw-window', function(e) {
-                that.remove();
-            });
-
-            // TODO: optional autoplay audio
-            $(document).on('mouseover', '.mw-voice', function() {
-                that.playAudio(this);
-            });
-        },
-
-        init: function() {
-            this.bindEvents();
-        }
-    };
-
-    function getWords() {
-        var selection = window.getSelection();
-        var frag = selection.getRangeAt(0).cloneContents();
-
-        if (!frag) {
-            return;
-        }
-
-        var wordElems = frag.querySelectorAll('.mw-highlight');
-        var words = [];
-
-        for (var i = 0, len = wordElems.length; i < len; i++) {
-            words.push(wordElems[i].textContent);
-        }
-
-        return words;
-    }
-
-    var toolbar = {
-        $elem: null,
-
-        offset: null,
-
-        template: [
-            '<div class="mw-toolbar">',
-            '<a class="mw-tool-iterm" href="mailto:{{email}}?subject={{subject}}">Mail</a>',
-            '</div>'
-        ].join(''),
-
-        refresh: function(offset) {
-            this.remove();
-            this.create(offset);
-        },
-
-        create: function(offset) {
-            var data = {
-                email: options.email,
-                subject: 'mineword: ' + getWords().join(', ')
             };
-            var html = utils.renderTemplate(this.template, data);
-
-            this.$elem = $(html).css({
-                left: offset.left,
-                top: offset.top - 40,
-            });
-
-            var that = this;
-
-            $('body').append(this.$elem);
-        },
-
-        remove: function() {
-            if (this.$elem) {
-                this.$elem.remove();
-                this.$elem = null;
-            }
-        },
-
-        onCopy: function(event) {
-            if (highlight.hasWords() && this.offset) {
-                this.refresh(this.offset);
-            }
-        },
-
-        onDocumentClick: function(e) {
-            var $target = $(e.target);
-            if (!$target.closest('.mw-toolbar').length) {
-                this.remove();
-            }
-        },
-
-        bindEvents: function() {
-            var that = this;
-
-            $(document).on('copy', function(event) {
-                that.onCopy(event);
-            });
-
-            $(document).on('click', function(event) {
-                that.onDocumentClick(event);
-            });
-        },
-
-        init: function() {
-
-            this.bindEvents();
         }
-    };
+    },
 
-    var host = window.location.hostname;
-    chrome.storage.sync.get('disurls', function(data) {
-        var isAbled = true;
-        var disurls = data.disurls;
+    onDocumentMouseleave: function (event) {
+        var $target = $(event.target);
 
-        if (!disurls || !disurls.length) {
-            init();
+        if (event.target === document) {
             return;
         }
+        if ($target.hasClass('mw-highlight') || $target.css('background-color') !== 'rgb(255, 255, 0)') {
+            this.hoverHandle = null;
+        }
+    },
+    bindEvents: function () {
+        var that = this;
 
-        disurls.forEach(function(v, k) {
-            if (v.indexOf(host) != -1) {
-                isAbled = false;
-                return false;
+        // 选中翻译
+        $(document).bind('mouseup', function (e) {
+            that.handleTextSelected(e);
+        });
+
+        $p.on('select', function (e, wordText, elem) {
+            var word = Word.create(wordText);
+            var wrapElem = highlight.refresh(elem, word);
+
+            utils.selectText(wrapElem);
+        });
+        // ctrl翻译
+        $(document).on('keydown', function (e) {
+            if (e.ctrlKey && that.hoverHandle) {
+                that.hoverHandle();
             }
         });
 
-        if (isAbled) {
-            init();
+        document.addEventListener('mouseenter', function (event) {
+            that.onDocumentMouseenter(this, event);
+        }, true);
+
+        document.addEventListener('mouseleave', function (event) {
+            that.onDocumentMouseleave(this, event);
+        }, true);
+
+        $(document).on('keydown', function (e) {
+            // ctrl + z to remove last word's highlight
+            if (e.keyCode === 90 && e.ctrlKey) {
+                that.removeLast();
+                return;
+            }
+
+            if (e.keyCode !== 8 || !window.getSelection().toString()) {
+                return;
+            }
+
+            var elem = window.getSelection().anchorNode.parentElement;
+            if ($(elem).hasClass('mw-highlight')) {
+                that.remove($(elem).data('id'));
+
+                e.preventDefault();
+                return false;
+            }
+        });
+    },
+
+    init: function () {
+        translate.init();
+        toolbar.init();
+        this.bindEvents();
+    }
+
+};
+
+var host = window.location.hostname;
+
+chrome.storage.sync.get('disurls', function (data) {
+    var isAbled = true;
+    var disurls = data.disurls;
+
+    if (!disurls || !disurls.length) {
+        MineWord.init();
+        return;
+    }
+
+    disurls.forEach(function (v, k) {
+        if (v.indexOf(host) != -1) {
+            isAbled = false;
+            return false;
         }
     });
 
-    // TODO: get msg from popup.html / bg.js
-    function init() {
-        highlight.init();
-        translate.init();
-        toolbar.init();
+    if (isAbled) {
+        MineWord.init();
     }
-    
-})(jQuery, document);
+});
